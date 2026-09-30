@@ -6,24 +6,30 @@ public enum PlayerState
     Grounded,
     Hopping,
     Airborne,
-    Stunned
+    Stunned,
+    Sliding,
 }
 
 public class Player : MonoBehaviour
 {
     [SerializeField] private Color color = Color.white;
-    [SerializeField] private float slideSpeed = 2f;    // lanes per second (lane goes -1..1)
     [SerializeField] private float laneHalfWidth = 3f; // temporary until StairPerspective places the player
+    [SerializeField] private float slideSpeed = 10f; // speed to move from one lane to the next
 
     private PlayerInput playerInput;
     private InputAction slideAction;
     private InputAction stepUp1Action;
     private InputAction stepUp2Action;
     private InputAction hopAction;
+    private Vector3 origPos, targetPos;
+    private int nbOfLanes = 7;
+    private bool isSliding;
+    private float target;
+    private float t = 0f;
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
-    private float lane;
+    private int lane;
 
     private void Awake()
     {
@@ -39,7 +45,7 @@ public class Player : MonoBehaviour
         hopAction = playerInput.actions["Hop"];
     }
 
-    public void Setup(Color playerColor, float startLane)
+    public void Setup(Color playerColor, int startLane)
     {
         color = playerColor;
         lane = startLane;
@@ -59,7 +65,10 @@ public class Player : MonoBehaviour
             return;
         }
 
-        Slide(slideAction.ReadValue<float>());
+        if (slideAction.WasPressedThisFrame() && state != PlayerState.Sliding)
+        {
+            Slide(slideAction.ReadValue<float>());
+        }
 
         if (stepUp1Action.WasPressedThisFrame())
         {
@@ -106,7 +115,7 @@ public class Player : MonoBehaviour
 
     private void HopInPlace()
     {
-        Debug.Log($"Player {playerInput.playerIndex + 1} hopped in place on step {stepIndex}");
+        origPos = transform.localPosition;
     }
 
     private void Land()
@@ -115,8 +124,23 @@ public class Player : MonoBehaviour
 
     private void Slide(float input)
     {
-        lane = Mathf.Clamp(lane + input * slideSpeed * Time.deltaTime, -1f, 1f);
-    }
+        origPos = transform.localPosition;
+
+        if (input > 0 && lane < 3)
+        {
+            state = PlayerState.Sliding;
+            lane += 1;
+        }
+
+        if (input < 0 && lane > -3) 
+        {
+            state = PlayerState.Sliding;
+            lane += -1;
+        }
+
+        targetPos = origPos;
+        targetPos.x = lane * laneHalfWidth * 2 / nbOfLanes;
+    } 
 
     public bool IsBlockedBy(Player other)
     {
@@ -150,7 +174,19 @@ public class Player : MonoBehaviour
     private void UpdateVisuals()
     {
         Vector3 position = transform.localPosition;
-        position.x = lane * laneHalfWidth;
+        position.x = lane * laneHalfWidth * 2 / nbOfLanes ;
+        if (state == PlayerState.Sliding)
+        {
+            position = Vector3.Lerp(origPos, targetPos, t) ;
+            t += slideSpeed * Time.deltaTime;
+
+            if(t > 1.0f)
+            {
+
+                t = 0f;
+                state = PlayerState.Grounded ;
+            }
+        }
         transform.localPosition = position;
     }
 }

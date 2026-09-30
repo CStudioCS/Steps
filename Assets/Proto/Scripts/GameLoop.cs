@@ -15,7 +15,7 @@ public class GameLoop : MonoBehaviour
 
     [SerializeField] private Player playerPrefab; 
     [SerializeField] private Color[] playerColors = { Color.cyan, Color.magenta };
-    [SerializeField] private float[] startLanes = { -0.5f, 0.5f };
+    [SerializeField] private int[] startLanes = { -1, 1 };
 
     private readonly Player[] players = new Player[2];
 
@@ -35,7 +35,7 @@ public class GameLoop : MonoBehaviour
             input.neverAutoSwitchControlSchemes = true;
             players[i] = input.GetComponent<Player>();
             players[i].Setup(playerColors[i], startLanes[i]);
-        }
+        } 
     }
 
     private void Update()
