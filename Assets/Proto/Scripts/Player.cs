@@ -122,6 +122,31 @@ public class Player : MonoBehaviour
     {
     }
 
+    public void TakeDamage()
+    {
+        switch (state)
+        {
+            case PlayerState.Grounded:
+                state = PlayerState.Stunned;
+                break;
+            case PlayerState.Hopping:
+                state = PlayerState.Grounded;
+                break;
+            case PlayerState.Airborne:
+                state = PlayerState.Grounded;
+                //garder la lane en mémoire pour renvoyer le joueur à sa colonne initiale
+                break;
+            case PlayerState.Stunned:
+                // Already stunned, maybe do nothing or reset stun timer
+                break;
+        }
+    }
+
+    public void DuringStun()
+    {
+        // Handle stun duration and recovery logic here
+    }
+
     private void Slide(float input)
     {
         origPos = transform.localPosition;

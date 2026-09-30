@@ -429,7 +429,7 @@ MonoBehaviour:
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
-  m_DefaultActionMap: 0d802e11-c2ce-4b09-b72d-e7aa624e51ff
+  m_DefaultActionMap: Enemy
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
 --- !u!1001 &1643639540
@@ -483,10 +483,6 @@ PrefabInstance:
     - target: {fileID: 5078854623004438768, guid: c6c723b72de4ceb48b0883868bac9aa4, type: 3}
       propertyPath: m_Name
       value: Enemy
-      objectReference: {fileID: 0}
-    - target: {fileID: 8765623174397867660, guid: c6c723b72de4ceb48b0883868bac9aa4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -0.7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
