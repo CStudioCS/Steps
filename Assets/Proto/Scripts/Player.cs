@@ -17,6 +17,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float slideSpeed = 10f; // speed to move from one lane to the next
     [SerializeField] private float hopSpeed = 4f;    // speed of the hop over the other player
     [SerializeField] private float hopHeight = 0.6f; // how high the hop arc goes
+    [SerializeField] private float stunDuration = 1.5f; // seconds frozen after being hit
 
     private PlayerInput playerInput;
     private InputAction slideAction;
@@ -29,6 +30,8 @@ public class Player : MonoBehaviour
     private float target;
     private float t = 0f;
     private int moveDirection; // -1 = moving left, 1 = moving right (only meaningful while Sliding or Airborne)
+    private int laneBeforeHop; // where to send the player back if hit during a hop over
+    private float stunTimer;   // seconds left before the player can move again
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
@@ -57,7 +60,15 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        ReadInput();
+        if (state == PlayerState.Stunned)
+        {
+            DuringStun();
+        }
+        else
+        {
+            ReadInput();
+        }
+
         UpdateVisuals();
     }
 
@@ -144,6 +155,11 @@ public class Player : MonoBehaviour
         {
             case PlayerState.Grounded:
                 state = PlayerState.Stunned;
+                Freeze(stunDuration);
+                break;
+            case PlayerState.Sliding:
+                // the slide finishes instantly (UpdateVisuals snaps to the new lane), then freeze
+                Freeze(stunDuration);
                 break;
             case PlayerState.Hopping:
                 state = PlayerState.Grounded;
@@ -151,6 +167,9 @@ public class Player : MonoBehaviour
             case PlayerState.Airborne:
                 state = PlayerState.Grounded;
                 //garder la lane en mémoire pour renvoyer le joueur à sa colonne initiale
+                lane = laneBeforeHop;
+                t = 0f;
+                transform.localPosition = origPos; // back on the ground where the hop started
                 break;
             case PlayerState.Stunned:
                 // Already stunned, maybe do nothing or reset stun timer
@@ -161,6 +180,22 @@ public class Player : MonoBehaviour
     public void DuringStun()
     {
         // Handle stun duration and recovery logic here
+        stunTimer -= Time.deltaTime;
+
+        if (stunTimer <= 0f)
+        {
+            state = PlayerState.Grounded;
+            GetComponent<SpriteRenderer>().color = color; // back to normal color
+        }
+    }
+
+    // Freeze the player: no input until the duration is over. Also used for penalties.
+    public void Freeze(float duration)
+    {
+        state = PlayerState.Stunned;
+        stunTimer = duration;
+        t = 0f;
+        GetComponent<SpriteRenderer>().color = Color.Lerp(color, Color.gray, 0.7f); // greyed out while frozen
     }
 
     private void Slide(float input)
@@ -219,6 +254,7 @@ public class Player : MonoBehaviour
         }
 
         origPos = transform.localPosition;
+        laneBeforeHop = lane;
         lane = landingLane;
         targetPos = origPos;
         targetPos.x = lane * laneHalfWidth * 2 / nbOfLanes;
