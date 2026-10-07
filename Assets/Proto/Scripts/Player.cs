@@ -184,6 +184,9 @@ public class Player : MonoBehaviour
         state = PlayerState.Grounded;
         t = 0f;
         flatPosition.y = 0f;
+
+        // The color rule lives in MoveRules: it freezes us if this step is not our color.
+        GameLoop.Instance.GetMoveRules().CheckLanding(this);
     }
 
     public void TakeDamage()
@@ -323,7 +326,7 @@ public class Player : MonoBehaviour
         return stepIndex;
     }
 
-    public float GetLane()
+    public int GetLane()
     {
         return lane;
     }

@@ -22,6 +22,7 @@ public class GameLoop : MonoBehaviour
     [SerializeField] private int[] startLanes = { -1, 1 };
     [SerializeField] private Stairs stairs;
     [SerializeField] private StairPerspective perspective;
+    [SerializeField] private MoveRules moveRules;
 
     private readonly Player[] players = new Player[2];
 
@@ -55,6 +56,11 @@ public class GameLoop : MonoBehaviour
     public StairPerspective GetPerspective()
     {
         return perspective;
+    }
+
+    public MoveRules GetMoveRules()
+    {
+        return moveRules;
     }
 
     public Player GetPlayer(int index)
