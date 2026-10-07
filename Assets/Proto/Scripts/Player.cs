@@ -15,10 +15,10 @@ public class Player : MonoBehaviour
     [SerializeField] private Color color = Color.white;
     [SerializeField] private float laneHalfWidth = 3f; // half width of the stairs, copied from StairPerspective in Start
     [SerializeField] private float slideSpeed = 10f; // speed to move from one lane to the next
-    [SerializeField] private float hopSpeed = 4f;    // speed of the hop over the other player
+    [SerializeField] private float hopSpeed = 6f;    // speed of the hop over the other player
     [SerializeField] private float hopHeight = 0.6f; // how high the hop arc goes
     [SerializeField] private float stunDuration = 1.5f; // seconds frozen after being hit
-    [SerializeField] private float stepUpSpeed = 5f;    // speed of the hop up the stairs
+    [SerializeField] private float stepUpSpeed = 8f;    // speed of the hop up the stairs
 
     private PlayerInput playerInput;
     private InputAction slideAction;
@@ -38,6 +38,9 @@ public class Player : MonoBehaviour
     private int stepBeforeHop;    // the step a step-up hop started from
     private float drawnStep;      // the step the player is drawn on: goes smoothly from one step to the next during a step-up
     private int queuedSlides;     // slide taps waiting to be played: 2 = two columns to the right, -1 = one to the left
+    private bool hasQueuedMove;   // a step-up or hop was pressed while busy and waits to be played
+    private MoveIntent queuedMove;
+    private int queuedHopDirection; // for a queued hop: -1 / 1 = hop over the other player that way, 0 = hop in place
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
@@ -130,14 +133,15 @@ public class Player : MonoBehaviour
             }
         }
 
+        // Step-ups and hops are remembered too (only the last one pressed)...
         if (stepUp1Action.WasPressedThisFrame())
         {
-            RequestMove(MoveIntent.StepUp1);
+            QueueMove(MoveIntent.StepUp1, 0);
         }
 
         if (stepUp2Action.WasPressedThisFrame())
         {
-            RequestMove(MoveIntent.StepUp2);
+            QueueMove(MoveIntent.StepUp2, 0);
         }
 
         if (hopAction.WasPressedThisFrame())
@@ -146,17 +150,39 @@ public class Player : MonoBehaviour
             float direction = slideAction.ReadValue<float>();
             if (direction > 0)
             {
-                HopOver(1);
+                QueueMove(MoveIntent.HopInPlace, 1);
             }
             else if (direction < 0)
             {
-                HopOver(-1);
+                QueueMove(MoveIntent.HopInPlace, -1);
             }
             else
             {
-                RequestMove(MoveIntent.HopInPlace);
+                QueueMove(MoveIntent.HopInPlace, 0);
             }
         }
+
+        // ...and played as soon as the player is standing still and has no slide left to play.
+        if (hasQueuedMove && state == PlayerState.Grounded && queuedSlides == 0)
+        {
+            hasQueuedMove = false;
+
+            if (queuedHopDirection != 0)
+            {
+                HopOver(queuedHopDirection);
+            }
+            else
+            {
+                RequestMove(queuedMove);
+            }
+        }
+    }
+
+    private void QueueMove(MoveIntent move, int hopDirection)
+    {
+        hasQueuedMove = true;
+        queuedMove = move;
+        queuedHopDirection = hopDirection;
     }
 
     public void RequestMove(MoveIntent intent)
@@ -288,6 +314,7 @@ public class Player : MonoBehaviour
         stunTimer = duration;
         t = 0f;
         queuedSlides = 0; // taps made before the freeze are forgotten
+        hasQueuedMove = false;
         GetComponent<SpriteRenderer>().color = Color.Lerp(color, Color.gray, 0.7f); // greyed out while frozen
     }
 

@@ -200,7 +200,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Player
   color: {r: 1, g: 1, b: 1, a: 1}
   laneHalfWidth: 3
-  slideSpeed: 5
+  slideSpeed: 10
 --- !u!114 &4018684881258252466
 MonoBehaviour:
   m_ObjectHideFlags: 0

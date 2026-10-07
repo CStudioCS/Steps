@@ -104,16 +104,26 @@ public class GameLoop : MonoBehaviour
     }
 
     // Placeholder UI: draws the score in the top left corner of the screen (OnGUI needs no Canvas).
+    // OnGUI is drawn after the cameras, so it is always in front of the game.
     private void OnGUI()
     {
         if (scoreStyle == null)
         {
             scoreStyle = new GUIStyle(GUI.skin.label);
-            scoreStyle.fontSize = 36;
+            scoreStyle.fontSize = 64;
+            scoreStyle.fontStyle = FontStyle.Bold;
             scoreStyle.normal.textColor = Color.white;
         }
 
-        GUI.Label(new Rect(20, 20, 400, 60), "Score: " + score, scoreStyle);
+        Rect panel = new Rect(20, 20, 480, 100);
+
+        // Dark panel behind the text, so the score reads on any background.
+        GUI.backgroundColor = Color.black;
+        GUI.Box(panel, GUIContent.none);
+        GUI.Box(panel, GUIContent.none); // drawn twice: the box is see-through, twice makes it darker
+        GUI.backgroundColor = Color.white;
+
+        GUI.Label(new Rect(panel.x + 20, panel.y + 8, panel.width, panel.height), "Score: " + score, scoreStyle);
     }
 
     public void StartCountdown()
