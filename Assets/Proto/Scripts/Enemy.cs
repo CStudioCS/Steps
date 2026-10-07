@@ -31,10 +31,6 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void OnBeat(int beat)
-    {
-    }
-
     // One of the two players, at random.
     private Player ChooseTarget()
     {

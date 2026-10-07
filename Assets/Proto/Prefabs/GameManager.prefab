@@ -46,9 +46,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameLoop
   playerPrefab: {fileID: 321177909704391763, guid: 470490946a50881428a562eba5928669, type: 3}
-  playerColors:
-  - {r: 0, g: 1, b: 1, a: 1}
-  - {r: 1, g: 0, b: 1, a: 1}
   startLanes: ffffffff01000000
   moveRules: {fileID: 5512893074410237716}
 --- !u!114 &5512893074410237716

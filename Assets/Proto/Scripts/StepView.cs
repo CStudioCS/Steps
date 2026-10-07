@@ -1,14 +1,14 @@
 using UnityEngine;
 
-// One column of one step.
 public class StepView : MonoBehaviour
 {
-    private int lane; // -3 (left) to 3 (right)
-
-    public void Setup(int stepIndex, int laneIndex, Color color)
+    public void Setup(int viewIndex)
     {
-        lane = laneIndex;
-        name = "Step " + stepIndex + " lane " + lane;
+        name = "Step view " + viewIndex;
+    }
+
+    public void SetColor(Color color)
+    {
         GetComponent<SpriteRenderer>().color = Color.Lerp(color, Color.black, 0.3f); // a bit darker, so players stand out on a step of their color
     }
 
@@ -17,12 +17,10 @@ public class StepView : MonoBehaviour
     {
         StairPerspective perspective = GameLoop.Instance.GetPerspective();
 
-        // Same column positions as the Player: lane * columnWidth.
-        float columnWidth = perspective.GetHalfWidth(0f) * 2f / Stairs.LaneCount;
-        transform.position = perspective.ToScreenPosition(rowOffset, lane * columnWidth);
+        transform.position = perspective.ToScreenPosition(rowOffset, 0f);
 
-        float width = columnWidth * perspective.GetScale(rowOffset) * 0.9f; // a bit less than a full column, so a gap shows between columns
-        float height = perspective.GetStepHeight(rowOffset) * 0.85f;        // a bit less than a full row, so a gap shows between steps
+        float width = perspective.GetHalfWidth(rowOffset) * 2f;
+        float height = perspective.GetStepHeight(rowOffset) * 0.85f; // a bit less than a full row, so a gap shows between steps
         transform.localScale = new Vector3(width, height, 1f);
     }
 }

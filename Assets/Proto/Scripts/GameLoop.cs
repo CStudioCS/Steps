@@ -18,13 +18,14 @@ public class GameLoop : MonoBehaviour
     private static readonly string[] KeyboardSchemes = { "KeyboardWASD", "KeyboardArrows" };
 
     [SerializeField] private Player playerPrefab;
-    [SerializeField] private Color[] playerColors = { Color.cyan, Color.magenta };
     [SerializeField] private int[] startLanes = { -1, 1 };
     [SerializeField] private Stairs stairs;
     [SerializeField] private StairPerspective perspective;
     [SerializeField] private MoveRules moveRules;
 
     private readonly Player[] players = new Player[2];
+    private int score;           // shared by both players
+    private GUIStyle scoreStyle; // font size and color of the score text
 
     private void Awake()
     {
@@ -89,12 +90,30 @@ public class GameLoop : MonoBehaviour
 
             input.neverAutoSwitchControlSchemes = true;
             players[i] = input.GetComponent<Player>();
-            players[i].Setup(playerColors[i], startLanes[i]);
+            players[i].Setup(startLanes[i]); // colors are given by the Stairs
         } 
     }
 
     private void Update()
     {
+    }
+
+    public void AddScore(int points)
+    {
+        score += points;
+    }
+
+    // Placeholder UI: draws the score in the top left corner of the screen (OnGUI needs no Canvas).
+    private void OnGUI()
+    {
+        if (scoreStyle == null)
+        {
+            scoreStyle = new GUIStyle(GUI.skin.label);
+            scoreStyle.fontSize = 36;
+            scoreStyle.normal.textColor = Color.white;
+        }
+
+        GUI.Label(new Rect(20, 20, 400, 60), "Score: " + score, scoreStyle);
     }
 
     public void StartCountdown()

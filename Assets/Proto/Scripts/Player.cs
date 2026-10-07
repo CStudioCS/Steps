@@ -60,11 +60,24 @@ public class Player : MonoBehaviour
         laneHalfWidth = GameLoop.Instance.GetPerspective().GetHalfWidth(0f);
     }
 
-    public void Setup(Color playerColor, int startLane)
+    public void Setup(int startLane)
     {
-        color = playerColor;
         lane = startLane;
-        GetComponent<SpriteRenderer>().color = playerColor;
+    }
+
+    // The Stairs give each player a new color from time to time.
+    public void SetColor(Color newColor)
+    {
+        color = newColor;
+
+        if (state == PlayerState.Stunned)
+        {
+            GetComponent<SpriteRenderer>().color = Color.Lerp(color, Color.gray, 0.7f); // still frozen: stay greyed out
+        }
+        else
+        {
+            GetComponent<SpriteRenderer>().color = color;
+        }
     }
 
     private void Update()
@@ -146,13 +159,13 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void OnBeat(int beat)
-    {
-    }
-
-    // TODO: wait for the beat (BeatClock) and ask MoveRules before moving.
     public void RequestMove(MoveIntent intent)
     {
+        if (!CanMoveNow(intent))
+        {
+            return;
+        }
+
         switch (intent)
         {
             case MoveIntent.StepUp1:
@@ -167,6 +180,21 @@ public class Player : MonoBehaviour
         }
     }
 
+    // Before a step-up or a hop, MoveRules decides if the move is allowed.
+    private bool CanMoveNow(MoveIntent intent)
+    {
+        Player other = GameLoop.Instance.GetOtherPlayer(this);
+        string reason;
+
+        bool allowed = GameLoop.Instance.GetMoveRules().CanMove(this, other, intent, out reason);
+        if (!allowed)
+        {
+            Debug.Log($"Player {playerInput.playerIndex + 1} move refused: {reason}");
+        }
+
+        return allowed;
+    }
+
     private void StepUp(int count)
     {
         if (state != PlayerState.Grounded)
@@ -175,13 +203,6 @@ public class Player : MonoBehaviour
         }
 
         int landingStep = stepIndex + count;
-
-        // No step to land on above the top of the stairs.
-        if (landingStep > GameLoop.Instance.GetStairs().GetTargetStep())
-        {
-            Debug.Log("Step up refused: top of the stairs");
-            return;
-        }
 
         // The other player is standing in our column on the landing step.
         Player other = GameLoop.Instance.GetOtherPlayer(this);
@@ -216,6 +237,11 @@ public class Player : MonoBehaviour
 
     public void TakeDamage()
     {
+        if (state != PlayerState.Stunned)
+        {
+            GameLoop.Instance.AddScore(-10); // hit by a projectile
+        }
+
         switch (state)
         {
             case PlayerState.Grounded:
@@ -295,6 +321,11 @@ public class Player : MonoBehaviour
             return;
         }
 
+        if (!CanMoveNow(MoveIntent.HopInPlace))
+        {
+            return;
+        }
+
         Player other = GameLoop.Instance.GetOtherPlayer(this);
         bool otherOnMyStep = other.GetStepIndex() == stepIndex;
         int landingLane = lane + 2 * direction;
@@ -345,6 +376,12 @@ public class Player : MonoBehaviour
     public bool IsBlockedBy(Player other)
     {
         return default;
+    }
+
+    // 0 for player 1, 1 for player 2 (given by GameLoop when the player is created).
+    public int GetPlayerIndex()
+    {
+        return playerInput.playerIndex;
     }
 
     public int GetStepIndex()

@@ -569,7 +569,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Stairs
   stepPrefab: {fileID: 6146050231468550349, guid: 0570bbfd705bf1b42a831702d98ed321, type: 3}
-  stepCount: 30
 --- !u!114 &1300000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
