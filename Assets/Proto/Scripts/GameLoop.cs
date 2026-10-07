@@ -20,6 +20,8 @@ public class GameLoop : MonoBehaviour
     [SerializeField] private Player playerPrefab;
     [SerializeField] private Color[] playerColors = { Color.cyan, Color.magenta };
     [SerializeField] private int[] startLanes = { -1, 1 };
+    [SerializeField] private Stairs stairs;
+    [SerializeField] private StairPerspective perspective;
 
     private readonly Player[] players = new Player[2];
 
@@ -43,6 +45,16 @@ public class GameLoop : MonoBehaviour
         {
             Instance = null;
         }
+    }
+
+    public Stairs GetStairs()
+    {
+        return stairs;
+    }
+
+    public StairPerspective GetPerspective()
+    {
+        return perspective;
     }
 
     public Player GetPlayer(int index)

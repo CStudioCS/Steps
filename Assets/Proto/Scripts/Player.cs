@@ -13,7 +13,7 @@ public enum PlayerState
 public class Player : MonoBehaviour
 {
     [SerializeField] private Color color = Color.white;
-    [SerializeField] private float laneHalfWidth = 3f; // temporary until StairPerspective places the player
+    [SerializeField] private float laneHalfWidth = 3f; // half width of the stairs, copied from StairPerspective in Start
     [SerializeField] private float slideSpeed = 10f; // speed to move from one lane to the next
     [SerializeField] private float hopSpeed = 4f;    // speed of the hop over the other player
     [SerializeField] private float hopHeight = 0.6f; // how high the hop arc goes
@@ -32,6 +32,8 @@ public class Player : MonoBehaviour
     private int moveDirection; // -1 = moving left, 1 = moving right (only meaningful while Sliding or Airborne)
     private int laneBeforeHop; // where to send the player back if hit during a hop over
     private float stunTimer;   // seconds left before the player can move again
+    private Vector3 flatPosition; // position on a flat, full size step. The perspective turns it into the screen position.
+    private Vector3 baseScale;    // prefab scale, before the perspective makes the player smaller or bigger
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
@@ -39,6 +41,7 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
+        baseScale = transform.localScale;
     }
 
     // Actions are cached in Start: PlayerInput gives each player its own copy of the actions during its own setup.
@@ -49,6 +52,8 @@ public class Player : MonoBehaviour
         stepUp1Action = playerInput.actions["StepUp1"];
         stepUp2Action = playerInput.actions["StepUp2"];
         hopAction = playerInput.actions["Hop"];
+
+        laneHalfWidth = GameLoop.Instance.GetPerspective().GetHalfWidth(0f);
     }
 
     public void Setup(Color playerColor, int startLane)
@@ -142,7 +147,7 @@ public class Player : MonoBehaviour
 
     private void HopInPlace()
     {
-        origPos = transform.localPosition;
+        origPos = flatPosition;
     }
 
     private void Land()
@@ -169,7 +174,7 @@ public class Player : MonoBehaviour
                 //garder la lane en mémoire pour renvoyer le joueur à sa colonne initiale
                 lane = laneBeforeHop;
                 t = 0f;
-                transform.localPosition = origPos; // back on the ground where the hop started
+                flatPosition = origPos; // back on the ground where the hop started
                 break;
             case PlayerState.Stunned:
                 // Already stunned, maybe do nothing or reset stun timer
@@ -200,7 +205,7 @@ public class Player : MonoBehaviour
 
     private void Slide(float input)
     {
-        origPos = transform.localPosition;
+        origPos = flatPosition;
 
         if (input > 0 && lane < 3 && !IsLaneTaken(lane + 1))
         {
@@ -253,7 +258,7 @@ public class Player : MonoBehaviour
             return;
         }
 
-        origPos = transform.localPosition;
+        origPos = flatPosition;
         laneBeforeHop = lane;
         lane = landingLane;
         targetPos = origPos;
@@ -306,7 +311,7 @@ public class Player : MonoBehaviour
 
     private void UpdateVisuals()
     {
-        Vector3 position = transform.localPosition;
+        Vector3 position = flatPosition;
         position.x = lane * laneHalfWidth * 2 / nbOfLanes ;
         if (state == PlayerState.Sliding)
         {
@@ -335,6 +340,14 @@ public class Player : MonoBehaviour
             }
         }
 
-        transform.localPosition = position;
+        flatPosition = position;
+
+        // Perspective: draw the flat position on our step. The higher the step, the smaller and higher on screen.
+        StairPerspective perspective = GameLoop.Instance.GetPerspective();
+        float rowOffset = stepIndex - GameLoop.Instance.GetStairs().GetAnchorStep();
+        float scale = perspective.GetScale(rowOffset);
+
+        transform.localPosition = perspective.ToScreenPosition(rowOffset, flatPosition.x) + Vector3.up * flatPosition.y * scale;
+        transform.localScale = baseScale * scale;
     }
 }
