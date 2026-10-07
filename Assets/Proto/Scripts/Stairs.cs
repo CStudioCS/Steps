@@ -6,7 +6,6 @@ public class Stairs : MonoBehaviour
 
     [SerializeField] private StepView stepPrefab;
     [SerializeField] private int stepCount = 30;
-    [SerializeField] private float scrollSpeed = 5f; // how fast the stairs catch up with the players
 
     // Hand-authored colors, read 7 at a time: the first 7 are step 0 from left to right, the next 7 are step 1...
     // If the list is too short, it starts again from the beginning.
@@ -17,7 +16,6 @@ public class Stairs : MonoBehaviour
 
     private Color[,] colors;       // the final color of every column: colors[step, column]
     private StepView[,] stepViews; // one StepView per column: stepViews[step, column]
-    private float anchorStep; // the step drawn at row 0. It follows the players smoothly, which scrolls the stairs.
 
     private void Awake()
     {
@@ -37,9 +35,9 @@ public class Stairs : MonoBehaviour
         }
     }
 
-    private void Update()
+    // LateUpdate runs after every Update: the players have already moved this frame, so the steps follow them exactly.
+    private void LateUpdate()
     {
-        UpdateAnchor();
         RefreshStepViews();
     }
 
@@ -80,24 +78,21 @@ public class Stairs : MonoBehaviour
         return stepCount - 1;
     }
 
+    // The step drawn at row 0 (the center row): the step of the player in front.
+    // It uses the drawn step, which moves during the step-up hop, so the stairs scroll
+    // exactly at the speed of the hop and the front player never leaves the center row.
     public float GetAnchorStep()
-    {
-        return anchorStep;
-    }
-
-    // The stairs follow the middle point between the two players. Lerp makes it smooth:
-    // it moves fast when far from the target and slows down when close.
-    private void UpdateAnchor()
     {
         Player player1 = GameLoop.Instance.GetPlayer(0);
         Player player2 = GameLoop.Instance.GetPlayer(1);
-        float middleStep = (player1.GetStepIndex() + player2.GetStepIndex()) / 2f;
 
-        anchorStep = Mathf.Lerp(anchorStep, middleStep, scrollSpeed * Time.deltaTime);
+        return Mathf.Max(player1.GetDrawnStep(), player2.GetDrawnStep());
     }
 
     private void RefreshStepViews()
     {
+        float anchorStep = GetAnchorStep();
+
         for (int step = 0; step < stepCount; step++)
         {
             for (int column = 0; column < LaneCount; column++)

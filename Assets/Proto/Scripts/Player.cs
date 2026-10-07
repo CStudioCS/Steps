@@ -37,6 +37,7 @@ public class Player : MonoBehaviour
     private Vector3 baseScale;    // prefab scale, before the perspective makes the player smaller or bigger
     private int stepBeforeHop;    // the step a step-up hop started from
     private float drawnStep;      // the step the player is drawn on: goes smoothly from one step to the next during a step-up
+    private int queuedSlides;     // slide taps waiting to be played: 2 = two columns to the right, -1 = one to the left
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
@@ -87,9 +88,33 @@ public class Player : MonoBehaviour
             return;
         }
 
-        if (slideAction.WasPressedThisFrame() && state == PlayerState.Grounded)
+        // Every tap is remembered, even while still busy (sliding, hopping...)
+        if (slideAction.WasPressedThisFrame())
         {
-            Slide(slideAction.ReadValue<float>());
+            float tap = slideAction.ReadValue<float>();
+            if (tap > 0)
+            {
+                queuedSlides += 1;
+            }
+            else if (tap < 0)
+            {
+                queuedSlides -= 1;
+            }
+        }
+
+        // ...and played one by one, as soon as the player is standing still again.
+        if (queuedSlides != 0 && state == PlayerState.Grounded)
+        {
+            Slide(queuedSlides); // Slide only looks at the sign: > 0 = right, < 0 = left
+
+            if (queuedSlides > 0)
+            {
+                queuedSlides -= 1;
+            }
+            else
+            {
+                queuedSlides += 1;
+            }
         }
 
         if (stepUp1Action.WasPressedThisFrame())
@@ -236,6 +261,7 @@ public class Player : MonoBehaviour
         state = PlayerState.Stunned;
         stunTimer = duration;
         t = 0f;
+        queuedSlides = 0; // taps made before the freeze are forgotten
         GetComponent<SpriteRenderer>().color = Color.Lerp(color, Color.gray, 0.7f); // greyed out while frozen
     }
 
@@ -324,6 +350,12 @@ public class Player : MonoBehaviour
     public int GetStepIndex()
     {
         return stepIndex;
+    }
+
+    // Where the player is drawn: between two steps during a step-up hop, otherwise equal to GetStepIndex().
+    public float GetDrawnStep()
+    {
+        return drawnStep;
     }
 
     public int GetLane()

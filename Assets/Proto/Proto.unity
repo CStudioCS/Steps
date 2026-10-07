@@ -340,41 +340,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &945620909 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5078854623004438768, guid: c6c723b72de4ceb48b0883868bac9aa4, type: 3}
-  m_PrefabInstance: {fileID: 1643639540}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &945620913
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 945620909}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
-  m_Actions: {fileID: -944628639613478452, guid: 004d249dec9fe904c8f82cc95613df64, type: 3}
-  m_NotificationBehavior: 0
-  m_UIInputModule: {fileID: 0}
-  m_DeviceLostEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_DeviceRegainedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ControlsChangedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
-  m_DefaultActionMap: 0d802e11-c2ce-4b09-b72d-e7aa624e51ff
-  m_SplitScreenIndex: -1
-  m_Camera: {fileID: 0}
 --- !u!1001 &1643639540
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -434,10 +399,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5078854623004438768, guid: c6c723b72de4ceb48b0883868bac9aa4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 945620913}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c6c723b72de4ceb48b0883868bac9aa4, type: 3}
 --- !u!1001 &7604857105958124750
 PrefabInstance:
@@ -608,7 +570,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Stairs
   stepPrefab: {fileID: 6146050231468550349, guid: 0570bbfd705bf1b42a831702d98ed321, type: 3}
   stepCount: 30
-  scrollSpeed: 5
 --- !u!114 &1300000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
