@@ -15,6 +15,8 @@ public class Player : MonoBehaviour
     [SerializeField] private Color color = Color.white;
     [SerializeField] private float laneHalfWidth = 3f; // temporary until StairPerspective places the player
     [SerializeField] private float slideSpeed = 10f; // speed to move from one lane to the next
+    [SerializeField] private float hopSpeed = 4f;    // speed of the hop over the other player
+    [SerializeField] private float hopHeight = 0.6f; // how high the hop arc goes
 
     private PlayerInput playerInput;
     private InputAction slideAction;
@@ -26,6 +28,7 @@ public class Player : MonoBehaviour
     private bool isSliding;
     private float target;
     private float t = 0f;
+    private int moveDirection; // -1 = moving left, 1 = moving right (only meaningful while Sliding or Airborne)
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
@@ -82,7 +85,20 @@ public class Player : MonoBehaviour
 
         if (hopAction.WasPressedThisFrame())
         {
-            RequestMove(MoveIntent.HopInPlace);
+            // Hop + a direction held = hop over the other player. Hop alone = hop in place.
+            float direction = slideAction.ReadValue<float>();
+            if (direction > 0)
+            {
+                HopOver(1);
+            }
+            else if (direction < 0)
+            {
+                HopOver(-1);
+            }
+            else
+            {
+                RequestMove(MoveIntent.HopInPlace);
+            }
         }
     }
 
@@ -151,21 +167,77 @@ public class Player : MonoBehaviour
     {
         origPos = transform.localPosition;
 
-        if (input > 0 && lane < 3)
+        if (input > 0 && lane < 3 && !IsLaneTaken(lane + 1))
         {
             state = PlayerState.Sliding;
             lane += 1;
+            moveDirection = 1;
         }
 
-        if (input < 0 && lane > -3) 
+        if (input < 0 && lane > -3 && !IsLaneTaken(lane - 1)) 
         {
             state = PlayerState.Sliding;
             lane += -1;
+            moveDirection = -1;
         }
 
         targetPos = origPos;
         targetPos.x = lane * laneHalfWidth * 2 / nbOfLanes;
     } 
+
+    // Jump 2 lanes in one go, over the other player standing right next to us.
+    private void HopOver(int direction)
+    {
+        if (state != PlayerState.Grounded)
+        {
+            return;
+        }
+
+        Player other = GameLoop.Instance.GetOtherPlayer(this);
+        bool otherOnMyStep = other.GetStepIndex() == stepIndex;
+        int landingLane = lane + 2 * direction;
+
+        // The other player is already moving that way: wait for them to finish.
+        if (otherOnMyStep && other.IsMovingInDirection(direction))
+        {
+            Debug.Log("Hop refused: the other player is moving that way");
+            return;
+        }
+
+        // Nobody next to us on that side: nothing to hop over, so just hop in place.
+        if (!otherOnMyStep || other.GetLane() != lane + direction)
+        {
+            RequestMove(MoveIntent.HopInPlace);
+            return;
+        }
+
+        // We would land outside the stairs.
+        if (landingLane < -3 || landingLane > 3)
+        {
+            Debug.Log("Hop refused: no room on the other side");
+            return;
+        }
+
+        origPos = transform.localPosition;
+        lane = landingLane;
+        targetPos = origPos;
+        targetPos.x = lane * laneHalfWidth * 2 / nbOfLanes;
+        moveDirection = direction;
+        state = PlayerState.Airborne;
+    }
+
+    // A lane is taken when the other player is in it (or already sliding into it) on the same step.
+    private bool IsLaneTaken(int targetLane)
+    {
+        Player other = GameLoop.Instance.GetOtherPlayer(this);
+        return other.GetStepIndex() == stepIndex && other.GetLane() == targetLane;
+    }
+
+    public bool IsMovingInDirection(int direction)
+    {
+        bool isMoving = state == PlayerState.Sliding || state == PlayerState.Airborne;
+        return isMoving && moveDirection == direction;
+    }
 
     public bool IsBlockedBy(Player other)
     {
@@ -212,6 +284,21 @@ public class Player : MonoBehaviour
                 state = PlayerState.Grounded ;
             }
         }
+
+        if (state == PlayerState.Airborne)
+        {
+            position = Vector3.Lerp(origPos, targetPos, t);
+            position.y += Mathf.Sin(t * Mathf.PI) * hopHeight; // goes up then down
+            t += hopSpeed * Time.deltaTime;
+
+            if (t > 1.0f)
+            {
+                t = 0f;
+                position = targetPos;
+                state = PlayerState.Grounded;
+            }
+        }
+
         transform.localPosition = position;
     }
 }

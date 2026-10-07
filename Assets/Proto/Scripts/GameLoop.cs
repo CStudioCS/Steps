@@ -11,9 +11,13 @@ public enum GameState
 
 public class GameLoop : MonoBehaviour
 {
+    // Singleton: there is only one GameLoop, and any script can reach it with GameLoop.Instance
+    // (use it from Start or later, not from Awake, so the GameLoop is sure to exist).
+    public static GameLoop Instance { get; private set; }
+
     private static readonly string[] KeyboardSchemes = { "KeyboardWASD", "KeyboardArrows" };
 
-    [SerializeField] private Player playerPrefab; 
+    [SerializeField] private Player playerPrefab;
     [SerializeField] private Color[] playerColors = { Color.cyan, Color.magenta };
     [SerializeField] private int[] startLanes = { -1, 1 };
 
@@ -21,7 +25,40 @@ public class GameLoop : MonoBehaviour
 
     private void Awake()
     {
+        // A second GameLoop (e.g. one dropped in the scene by mistake) removes itself.
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
         SpawnPlayers();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+    public Player GetPlayer(int index)
+    {
+        return players[index];
+    }
+
+    // The other player of the pair: GetOtherPlayer(player 1) gives player 2, and the reverse.
+    public Player GetOtherPlayer(Player player)
+    {
+        if (players[0] == player)
+        {
+            return players[1];
+        }
+
+        return players[0];
     }
 
     private void SpawnPlayers()
