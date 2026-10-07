@@ -18,6 +18,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float hopSpeed = 4f;    // speed of the hop over the other player
     [SerializeField] private float hopHeight = 0.6f; // how high the hop arc goes
     [SerializeField] private float stunDuration = 1.5f; // seconds frozen after being hit
+    [SerializeField] private float stepUpSpeed = 5f;    // speed of the hop up the stairs
 
     private PlayerInput playerInput;
     private InputAction slideAction;
@@ -34,6 +35,8 @@ public class Player : MonoBehaviour
     private float stunTimer;   // seconds left before the player can move again
     private Vector3 flatPosition; // position on a flat, full size step. The perspective turns it into the screen position.
     private Vector3 baseScale;    // prefab scale, before the perspective makes the player smaller or bigger
+    private int stepBeforeHop;    // the step a step-up hop started from
+    private float drawnStep;      // the step the player is drawn on: goes smoothly from one step to the next during a step-up
 
     private PlayerState state = PlayerState.Grounded;
     private int stepIndex;
@@ -84,7 +87,7 @@ public class Player : MonoBehaviour
             return;
         }
 
-        if (slideAction.WasPressedThisFrame() && state != PlayerState.Sliding)
+        if (slideAction.WasPressedThisFrame() && state == PlayerState.Grounded)
         {
             Slide(slideAction.ReadValue<float>());
         }
@@ -141,7 +144,32 @@ public class Player : MonoBehaviour
 
     private void StepUp(int count)
     {
+        if (state != PlayerState.Grounded)
+        {
+            return;
+        }
+
+        int landingStep = stepIndex + count;
+
+        // No step to land on above the top of the stairs.
+        if (landingStep > GameLoop.Instance.GetStairs().GetTargetStep())
+        {
+            Debug.Log("Step up refused: top of the stairs");
+            return;
+        }
+
+        // The other player is standing in our column on the landing step.
+        Player other = GameLoop.Instance.GetOtherPlayer(this);
+        if (other.GetStepIndex() == landingStep && other.GetLane() == lane)
+        {
+            Debug.Log("Step up refused: the other player is in the way");
+            return;
+        }
+
+        stepBeforeHop = stepIndex;
         stepIndex += count;
+        t = 0f;
+        state = PlayerState.Hopping; // UpdateVisuals animates the hop, then calls Land()
         Debug.Log($"Player {playerInput.playerIndex + 1} stepped up {count} -> step {stepIndex}");
     }
 
@@ -150,8 +178,12 @@ public class Player : MonoBehaviour
         origPos = flatPosition;
     }
 
+    // End of a step-up hop: back on the ground, on the new step.
     private void Land()
     {
+        state = PlayerState.Grounded;
+        t = 0f;
+        flatPosition.y = 0f;
     }
 
     public void TakeDamage()
@@ -168,6 +200,7 @@ public class Player : MonoBehaviour
                 break;
             case PlayerState.Hopping:
                 state = PlayerState.Grounded;
+                Land(); // lands right away on the new step
                 break;
             case PlayerState.Airborne:
                 state = PlayerState.Grounded;
@@ -340,11 +373,28 @@ public class Player : MonoBehaviour
             }
         }
 
+        if (state == PlayerState.Hopping)
+        {
+            drawnStep = Mathf.Lerp(stepBeforeHop, stepIndex, t);
+            position.y = Mathf.Sin(t * Mathf.PI) * hopHeight; // goes up then down
+            t += stepUpSpeed * Time.deltaTime;
+
+            if (t > 1.0f)
+            {
+                position.y = 0f;
+                Land();
+            }
+        }
+        else
+        {
+            drawnStep = stepIndex;
+        }
+
         flatPosition = position;
 
         // Perspective: draw the flat position on our step. The higher the step, the smaller and higher on screen.
         StairPerspective perspective = GameLoop.Instance.GetPerspective();
-        float rowOffset = stepIndex - GameLoop.Instance.GetStairs().GetAnchorStep();
+        float rowOffset = drawnStep - GameLoop.Instance.GetStairs().GetAnchorStep();
         float scale = perspective.GetScale(rowOffset);
 
         transform.localPosition = perspective.ToScreenPosition(rowOffset, flatPosition.x) + Vector3.up * flatPosition.y * scale;
